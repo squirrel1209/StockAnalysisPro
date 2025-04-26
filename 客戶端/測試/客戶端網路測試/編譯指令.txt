@@ -1,0 +1,1 @@
+g++ -o client main.cpp ClientApplication.cpp NetworkClient.cpp FileHandler.cpp PacketFactory.cpp JsonPacket.cpp  -lws2_32
