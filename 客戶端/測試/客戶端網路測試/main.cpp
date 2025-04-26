@@ -1,17 +1,21 @@
-#include "ClientApplication.h"
 #include <iostream>
+#include "ClientApplication.h"
 
-// 主程式，啟動客戶端
-int main() {
-    // 初始化客戶端，連線到本地伺服器
-    ClientApplication client("127.0.0.1", 8080, "output.json");
+int main()
+{
+    // 建立 ClientApplication，指向本地 127.0.0.1:8080
+    ClientApplication client("127.0.0.1", 8080);
 
-    // 執行客戶端邏輯
-    if (!client.run()) {
-        std::cerr << "客戶端執行失敗" << std::endl;
-        return -1;
+    // 從伺服器取得封包
+    auto packet = client.fetchPacket();
+    if (!packet) {
+        std::cerr << "連線或資料錯誤！" << std::endl;
+        return 1;
     }
 
-    std::cout << "客戶端執行成功" << std::endl;
+    // 成功取得封包後，印出 payload 內容
+    std::cout << "封包類型: " << packet->getDataType() << std::endl;
+    std::cout << "封包內容:\n" << packet->getPayload() << std::endl;
+
     return 0;
 }

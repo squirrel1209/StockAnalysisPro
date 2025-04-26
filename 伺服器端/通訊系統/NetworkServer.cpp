@@ -1,148 +1,151 @@
 #include "NetworkServer.h"
+#include <ws2tcpip.h>
 #include <iostream>
 
-// 以指定埠號初始化
-NetworkServer::NetworkServer(int port) : port(port), server_fd(INVALID_SOCKET), client_socket(INVALID_SOCKET), initialized(false) {
-    addrlen = sizeof(address);
+NetworkServer::NetworkServer(int port) : port(port), server_fd(INVALID_SOCKET), client_socket(INVALID_SOCKET), initialized(false), addrlen(sizeof(address)) {
+    ZeroMemory(&address, sizeof(address));
 }
 
-// 清理資源
 NetworkServer::~NetworkServer() {
     cleanup();
 }
 
-// 初始化 Winsock 和 socket
 bool NetworkServer::initialize() {
+    // 初始化 Winsock
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
         std::cerr << "WSAStartup 失敗: " << WSAGetLastError() << std::endl;
         return false;
     }
-    if (!createSocket()) return false;
-    if (!setSocketOptions()) return false;
-    if (!bindSocket()) return false;
+
+    // 創建 socket
+    if (!createSocket()) {
+        WSACleanup();
+        return false;
+    }
+
+    // 設置 socket 選項
+    if (!setSocketOptions()) {
+        cleanup();
+        return false;
+    }
+
+    // 綁定 socket
+    if (!bindSocket()) {
+        cleanup();
+        return false;
+    }
+
     initialized = true;
     return true;
 }
 
-// 創建 socket
 bool NetworkServer::createSocket() {
     server_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server_fd == INVALID_SOCKET) {
         std::cerr << "Socket 創建失敗: " << WSAGetLastError() << std::endl;
-        WSACleanup();
         return false;
     }
     return true;
 }
 
-// 設置 socket 選項
 bool NetworkServer::setSocketOptions() {
     int opt = 1;
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, (char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
         std::cerr << "設置 socket 選項失敗: " << WSAGetLastError() << std::endl;
-        closesocket(server_fd);
-        WSACleanup();
         return false;
     }
     return true;
 }
 
-// 綁定 socket 到地址
 bool NetworkServer::bindSocket() {
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
+
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
-        std::cerr << "綁定失敗: " << WSAGetLastError() << std::endl;
-        closesocket(server_fd);
-        WSACleanup();
+        std::cerr << "綁定 socket 失敗: " << WSAGetLastError() << std::endl;
         return false;
     }
     return true;
 }
 
-// 開始監聽客戶端連線
 bool NetworkServer::startListening() {
-    if (listen(server_fd, 3) == SOCKET_ERROR) {
-        std::cerr << "監聽失敗: " << WSAGetLastError() << std::endl;
-        closesocket(server_fd);
-        WSACleanup();
+    if (!initialized) {
+        std::cerr << "伺服器未初始化" << std::endl;
         return false;
     }
-    std::cout << "伺服器監聽於埠 " << port << std::endl;
+
+    if (listen(server_fd, SOMAXCONN) == SOCKET_ERROR) {
+        std::cerr << "監聽失敗: " << WSAGetLastError() << std::endl;
+        return false;
+    }
+    std::cout << "伺服器正在監聽埠 " << port << "..." << std::endl;
     return true;
 }
 
-// 接受客戶端連線
 bool NetworkServer::acceptConnection() {
     client_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen);
     if (client_socket == INVALID_SOCKET) {
         std::cerr << "接受連線失敗: " << WSAGetLastError() << std::endl;
-        closesocket(server_fd);
-        WSACleanup();
         return false;
     }
-    std::cout << "連線已接受" << std::endl;
+    std::cout << "客戶端連線成功" << std::endl;
     return true;
 }
 
-// 傳送封包
 bool NetworkServer::sendPacket(const PacketInterface& packet) {
-    std::string packet_data = packet.encapsulate();
-    int total_sent = 0;
-    int data_length = packet_data.length();
-    const char* data = packet_data.c_str();
+    std::string data = packet.encapsulate();
+    uint32_t data_len = htonl(data.length()); // 把長度轉成 network byte order
 
-    // 分段傳送數據
-    while (total_sent < data_length) {
-        int sent = send(client_socket, data + total_sent, data_length - total_sent, 0);
-        if (sent == SOCKET_ERROR) {
-            std::cerr << "傳送失敗: " << WSAGetLastError() << std::endl;
-            return false;
-        }
-        total_sent += sent;
+    // 先送長度
+    if (send(client_socket, (char*)&data_len, sizeof(data_len), 0) == SOCKET_ERROR) {
+        std::cerr << "傳送資料長度失敗: " << WSAGetLastError() << std::endl;
+        return false;
+    }
+
+    // 再送資料
+    int bytes_sent = send(client_socket, data.c_str(), data.length(), 0);
+    if (bytes_sent == SOCKET_ERROR) {
+        std::cerr << "傳送資料失敗: " << WSAGetLastError() << std::endl;
+        return false;
     }
     return true;
 }
 
-// 接收封包字串
-std::string NetworkServer::receive() {
-    std::string received_data;
-    char buffer[1024] = {0};
-    int bytes_received;
-    int max_attempts = 10;
-    int attempts = 0;
 
-    // 循環接收直到收到確認訊息或達到最大嘗試次數
-    while (attempts < max_attempts) {
-        bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-        if (bytes_received == SOCKET_ERROR) {
-            std::cerr << "接收失敗，錯誤碼: " << WSAGetLastError() << std::endl;
+std::string NetworkServer::receive() {
+    uint32_t data_len = 0;
+    int ret = recv(client_socket, (char*)&data_len, sizeof(data_len), 0);
+    if (ret <= 0) {
+        std::cerr << "接收資料長度失敗: " << WSAGetLastError() << std::endl;
+        return "";
+    }
+    data_len = ntohl(data_len); // 轉回 host byte order
+
+    std::string result;
+    result.resize(data_len);
+
+    int total_received = 0;
+    while (total_received < data_len) {
+        int bytes_received = recv(client_socket, &result[total_received], data_len - total_received, 0);
+        if (bytes_received <= 0) {
+            std::cerr << "接收資料失敗或連線關閉: " << WSAGetLastError() << std::endl;
             return "";
         }
-        if (bytes_received == 0) {
-            if (received_data.empty()) {
-                std::cerr << "客戶端關閉連線，無數據接收" << std::endl;
-            }
-            break;
-        }
-        received_data.append(buffer, bytes_received);
-        if (received_data.find("JSON|ACK") != std::string::npos) {
-            break;
-        }
-        attempts++;
+        total_received += bytes_received;
     }
-
-    return received_data;
+    return result;
 }
 
-// 清理 socket 和 Winsock 資源
+
 void NetworkServer::cleanup() {
     if (client_socket != INVALID_SOCKET) {
         closesocket(client_socket);
+        client_socket = INVALID_SOCKET;
     }
     if (server_fd != INVALID_SOCKET) {
         closesocket(server_fd);
+        server_fd = INVALID_SOCKET;
     }
     WSACleanup();
 }

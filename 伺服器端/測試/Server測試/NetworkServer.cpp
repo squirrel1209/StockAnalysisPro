@@ -95,6 +95,15 @@ bool NetworkServer::acceptConnection() {
 
 bool NetworkServer::sendPacket(const PacketInterface& packet) {
     std::string data = packet.encapsulate();
+    uint32_t data_len = htonl(data.length()); // 把長度轉成 network byte order
+
+    // 先送長度
+    if (send(client_socket, (char*)&data_len, sizeof(data_len), 0) == SOCKET_ERROR) {
+        std::cerr << "傳送資料長度失敗: " << WSAGetLastError() << std::endl;
+        return false;
+    }
+
+    // 再送資料
     int bytes_sent = send(client_socket, data.c_str(), data.length(), 0);
     if (bytes_sent == SOCKET_ERROR) {
         std::cerr << "傳送資料失敗: " << WSAGetLastError() << std::endl;
@@ -103,15 +112,31 @@ bool NetworkServer::sendPacket(const PacketInterface& packet) {
     return true;
 }
 
+
 std::string NetworkServer::receive() {
-    char buffer[4096] = {0};
-    int bytes_received = recv(client_socket, buffer, sizeof(buffer) - 1, 0);
-    if (bytes_received == SOCKET_ERROR || bytes_received == 0) {
-        std::cerr << "接收資料失敗或連線關閉: " << WSAGetLastError() << std::endl;
+    uint32_t data_len = 0;
+    int ret = recv(client_socket, (char*)&data_len, sizeof(data_len), 0);
+    if (ret <= 0) {
+        std::cerr << "接收資料長度失敗: " << WSAGetLastError() << std::endl;
         return "";
     }
-    return std::string(buffer, bytes_received);
+    data_len = ntohl(data_len); // 轉回 host byte order
+
+    std::string result;
+    result.resize(data_len);
+
+    int total_received = 0;
+    while (total_received < data_len) {
+        int bytes_received = recv(client_socket, &result[total_received], data_len - total_received, 0);
+        if (bytes_received <= 0) {
+            std::cerr << "接收資料失敗或連線關閉: " << WSAGetLastError() << std::endl;
+            return "";
+        }
+        total_received += bytes_received;
+    }
+    return result;
 }
+
 
 void NetworkServer::cleanup() {
     if (client_socket != INVALID_SOCKET) {
