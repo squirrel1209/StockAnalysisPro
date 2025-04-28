@@ -22,6 +22,8 @@ public:
     SOCKET getClientSocket() const; // 取得目前 client socket
 
     std::string receive(); // 接收封包字串
+
+    
     void cleanup(); // 清理 socket 和 Winsock 資源
 
 private:

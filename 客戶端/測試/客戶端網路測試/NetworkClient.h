@@ -26,6 +26,10 @@ public:
     // 接收封包字串
     std::string receive();
 
+    // 接收封包長度
+    bool receiveRaw(char* buffer, int length);
+
+
     // 傳送封包
     bool sendPacket(const PacketInterface& packet);
 

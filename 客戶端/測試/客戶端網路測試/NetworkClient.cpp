@@ -78,6 +78,18 @@ std::string NetworkClient::receive() {
     return result;
 }
 
+bool NetworkClient::receiveRaw(char* buffer, int length) {
+    int totalReceived = 0;
+    while (totalReceived < length) {
+        int bytes = recv(sock_, buffer + totalReceived, length - totalReceived, 0);
+        if (bytes <= 0) {
+            return false; // 收到錯誤或連線中斷
+        }
+        totalReceived += bytes;
+    }
+    return true;
+}
+
 
 bool NetworkClient::sendPacket(const PacketInterface& packet) {
     std::string data = packet.encapsulate();

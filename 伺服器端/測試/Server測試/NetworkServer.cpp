@@ -133,6 +133,8 @@ std::string NetworkServer::receive() {
     return result;
 }
 
+
+
 void NetworkServer::cleanup() {
     if (client_socket != INVALID_SOCKET) {
         closesocket(client_socket);

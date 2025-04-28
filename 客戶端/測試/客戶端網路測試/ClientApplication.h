@@ -15,6 +15,9 @@ public:
     // 從伺服器取得一個封包（由 PacketFactory 自動解析封裝）
     std::unique_ptr<PacketInterface> fetchPacket();
 
+
+    // 🛠✅ 加上這行
+    bool receiveData(char* buffer, int length);
 private:
     // 網路客戶端，負責 TCP 連線與資料接收
     NetworkClient network_client_;

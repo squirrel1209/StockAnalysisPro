@@ -46,3 +46,8 @@ std::unique_ptr<PacketInterface> ClientApplication::fetchPacket() {
 
     return packet;
 }
+
+
+bool ClientApplication::receiveData(char* buffer, int length) {
+    return network_client_.receiveRaw(buffer, length);
+}
