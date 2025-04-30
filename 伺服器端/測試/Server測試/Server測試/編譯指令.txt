@@ -1,0 +1,1 @@
+g++ -o server main.cpp NetworkServer.cpp FileReader.cpp PacketFactory.cpp JsonPacket.cpp task_pool.cpp -lws2_32 -std=c++17
