@@ -1,0 +1,101 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing true
+skinparam classFontColor Black
+skinparam classBackgroundColor #F9F9F9
+skinparam classBorderColor #888
+skinparam ArrowColor #3366cc
+
+' === 主程式 ===
+package "主程式" {
+    class main {
+        +int main()
+    }
+}
+
+' === 資料處理模組 ===
+package "資料擷取模組" {
+    class StockDataFetcher {
+        -string apiKey_
+        +StockDataFetcher(apiKey: string)
+        +void fetchAndSaveAll(symbols: vector<string>)
+        -string getStockData(symbol: string)
+        -void saveJson(symbol: string, jsonData: string)
+        -static size_t WriteCallback(void*, size_t, size_t, string*)
+    }
+}
+
+package "資料讀取模組" {
+    class FileReader {
+        +FileReader()
+        +~FileReader()
+        +string readJsonFile(filename: string) const
+    }
+}
+
+' === 封包處理模組 ===
+package "封包系統" {
+    interface PacketInterface {
+        +string encapsulate()
+        +bool decapsulate(packet: string)
+        +string getDataType()
+        +string getPayload()
+    }
+
+    class JsonPacket {
+        +JsonPacket()
+        +JsonPacket(json: string)
+        +string encapsulate()
+        +bool decapsulate(packet: string)
+        +string getDataType()
+        +string getPayload()
+        -string json_data_
+    }
+
+    class PacketFactory {
+        +static unique_ptr<PacketInterface> createPacket(dataType: string, data: string)
+    }
+
+    JsonPacket ..|> PacketInterface
+}
+
+' === 網路傳輸模組 ===
+package "網路傳輸模組" {
+    class NetworkServer {
+        +NetworkServer(port: int)
+        +~NetworkServer()
+        +bool initialize()
+        +bool startListening()
+        +bool acceptConnection()
+        +bool sendPacket(packet: PacketInterface)
+        +bool sendPacket(client: SOCKET, packet: PacketInterface)
+        +string receive()
+        +void cleanup()
+    }
+    
+    class TaskPool {
+        +TaskPool()
+        +~TaskPool()
+        +void AddTask(task: function)
+        -deque<task_type> queue_
+        -vector<thread> threads_
+    }
+
+    NetworkServer --> TaskPool : 使用
+}
+
+' === 關係連接 ===
+main --> StockDataFetcher : 使用
+main --> FileReader : 使用
+main --> NetworkServer : 啟動傳輸
+
+StockDataFetcher --> "API Server" : 發送請求
+StockDataFetcher --> "JSON File" : 儲存檔案
+FileReader --> "JSON File" : 讀取檔案
+FileReader --> JsonPacket : 封裝資料
+
+JsonPacket --> PacketInterface : 實作
+PacketFactory --> PacketInterface : 工廠產生
+NetworkServer --> PacketInterface : 傳送封包
+
+@enduml

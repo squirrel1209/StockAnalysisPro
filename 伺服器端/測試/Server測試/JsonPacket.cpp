@@ -3,10 +3,12 @@
 // 定義資料類型常數
 const std::string JsonPacket::DATA_TYPE = "JSON";
 
+JsonPacket::JsonPacket() : json_data_("") {} // 空 JSON 數據
+
 JsonPacket::JsonPacket(const std::string& json_data) : json_data_(json_data) {}
 
 std::string JsonPacket::encapsulate() const {
-    // 簡單封裝：添加資料類型前綴
+    // 封裝：添加資料類型前綴
     return DATA_TYPE + "|" + json_data_;
 }
 
