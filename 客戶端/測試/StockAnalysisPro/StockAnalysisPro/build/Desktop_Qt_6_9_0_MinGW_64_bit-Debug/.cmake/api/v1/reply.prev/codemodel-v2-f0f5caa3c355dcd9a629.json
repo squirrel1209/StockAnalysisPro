@@ -1,0 +1,79 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-32cd7612728a5017f7bf.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "StockAnalysisPro",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "StockAnalysisPro::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-StockAnalysisPro-Debug-23bf28216da89314a2ea.json",
+					"name" : "StockAnalysisPro",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "StockAnalysisPro_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-StockAnalysisPro_autogen-Debug-82e6fc05a19eab712e3b.json",
+					"name" : "StockAnalysisPro_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "StockAnalysisPro_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-StockAnalysisPro_autogen_timestamp_deps-Debug-b210313ffc1d997e90cf.json",
+					"name" : "StockAnalysisPro_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/c++/QT/StockAnalysisPro/build/Desktop_Qt_6_9_0_MinGW_64_bit-Debug",
+		"source" : "C:/c++/QT/StockAnalysisPro"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
