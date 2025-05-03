@@ -19,12 +19,13 @@ int main() {
 
     // 🛠 讀取五個 JSON 檔案
     std::vector<std::string> filenames = {
-        "stock_data_AAPL.json",
-        "stock_data_AMZN.json",
-        "stock_data_GOOGL.json",
-        "stock_data_MSFT.json",
-        "stock_data_NVDA.json"
+        "../TechnicalIndicators/output_json/stock_data_AAPL_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_AMZN_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_GOOGL_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_MSFT_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_NVDA_processed.json"
     };
+    
 
     std::vector<std::string> json_data_list;
 
