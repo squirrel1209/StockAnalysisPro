@@ -1,9 +1,14 @@
-// === NetworkServer.cpp ===
+// NetworkServer.cpp
 #include "NetworkServer.h"
+
 #include <ws2tcpip.h>
+
+#include <cstdint>
 #include <iostream>
 
-NetworkServer::NetworkServer(int port) : port(port), server_fd(INVALID_SOCKET), client_socket(INVALID_SOCKET), initialized(false), addrlen(sizeof(address)) {
+#include "JsonPacket.h"
+
+NetworkServer::NetworkServer(int port) : port(port), server_fd(INVALID_SOCKET), client_socket(INVALID_SOCKET), initialized(false), addrlen(sizeof(address)), running(false), json_data("") {
     ZeroMemory(&address, sizeof(address));
 }
 
@@ -82,8 +87,61 @@ bool NetworkServer::acceptConnection() {
         std::cerr << "[ERROR] 接受連線失敗: " << WSAGetLastError() << std::endl;
         return false;
     }
-    std::cout << "[INFO] 客戶端連線成功" << std::endl;
+    std::cout << "[INFO] 客戶端連線成功，socket: " << client_socket << std::endl;
     return true;
+}
+
+void NetworkServer::run() {
+    if (!startListening()) {
+        return;
+    }
+    running = true;
+    while (running) {
+        std::cout << "[INFO] 等待客戶端連線..." << std::endl;
+        if (acceptConnection()) {
+            u_long mode = 1;
+            ioctlsocket(client_socket, FIONBIO, &mode);
+
+            bool keep_connection = true;
+            bool data_sent = false;  // 跟踪是否已傳送數據
+
+            while (keep_connection && running) {
+                if (!json_data.empty() && !data_sent) {
+                    JsonPacket packet(json_data);
+                    if (sendPacket(client_socket, packet)) {
+                        std::cout << "[INFO] [SOCKET " << client_socket << "] 傳送 JSON 陣列成功" << std::endl;
+                        data_sent = true;  // 標記數據已傳送
+                    } else {
+                        std::cerr << "[ERROR] 傳送失敗，關閉連線" << std::endl;
+                        keep_connection = false;
+                    }
+                }
+
+                // 檢查客戶端是否斷開
+                char buffer[1];
+                int result = recv(client_socket, buffer, 1, MSG_PEEK);
+                if (result == 0 || (result == SOCKET_ERROR && WSAGetLastError() == WSAECONNRESET)) {
+                    std::cout << "[INFO] [SOCKET " << client_socket << "] 客戶端斷開連線" << std::endl;
+                    keep_connection = false;
+                }
+
+                Sleep(3000);
+            }
+
+            closesocket(client_socket);
+            client_socket = INVALID_SOCKET;
+            std::cout << "[INFO] [SOCKET " << client_socket << "] 客戶端連線已關閉" << std::endl;
+        }
+    }
+}
+
+void NetworkServer::stop() {
+    running = false;
+    cleanup();
+}
+
+void NetworkServer::setJsonData(const std::string& jsonData) {
+    json_data = jsonData;
 }
 
 bool NetworkServer::sendPacket(const PacketInterface& packet) {
@@ -93,15 +151,32 @@ bool NetworkServer::sendPacket(const PacketInterface& packet) {
 bool NetworkServer::sendPacket(SOCKET client, const PacketInterface& packet) {
     std::string data = packet.encapsulate();
     uint32_t data_len = htonl(data.length());
-    if (send(client, (char*)&data_len, sizeof(data_len), 0) == SOCKET_ERROR) {
-        std::cerr << "[ERROR] 傳送資料長度失敗: " << WSAGetLastError() << std::endl;
-        return false;
+
+    // 傳送數據長度
+    int total_sent = 0;
+    int len_size = sizeof(data_len);
+    while (total_sent < len_size) {
+        int sent = send(client, (char*)&data_len + total_sent, len_size - total_sent, 0);
+        if (sent == SOCKET_ERROR) {
+            std::cerr << "[ERROR] 傳送資料長度失敗: " << WSAGetLastError() << std::endl;
+            return false;
+        }
+        total_sent += sent;
     }
-    int bytes_sent = send(client, data.c_str(), data.length(), 0);
-    if (bytes_sent == SOCKET_ERROR) {
-        std::cerr << "[ERROR] 傳送資料失敗: " << WSAGetLastError() << std::endl;
-        return false;
+
+    // 傳送數據
+    total_sent = 0;
+    int data_size = data.length();
+    while (total_sent < data_size) {
+        int sent = send(client, data.c_str() + total_sent, data_size - total_sent, 0);
+        if (sent == SOCKET_ERROR) {
+            std::cerr << "[ERROR] 傳送資料失敗: " << WSAGetLastError() << std::endl;
+            return false;
+        }
+        total_sent += sent;
     }
+
+    std::cout << "[INFO] 成功傳送數據，長度: " << data_size << std::endl;
     return true;
 }
 
@@ -132,8 +207,6 @@ std::string NetworkServer::receive() {
     }
     return result;
 }
-
-
 
 void NetworkServer::cleanup() {
     if (client_socket != INVALID_SOCKET) {

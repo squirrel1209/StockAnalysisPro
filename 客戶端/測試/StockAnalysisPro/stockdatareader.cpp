@@ -50,11 +50,27 @@ bool StockDataReader::readJsonFile(const QString &filePath, SingleStockDataManag
         dailyData.high = dailyObj["2. high"].toString().toDouble();
         dailyData.low = dailyObj["3. low"].toString().toDouble();
         dailyData.close = dailyObj["4. close"].toString().toDouble();
-        dailyData.volume = dailyObj["5. volume"].toString().toInt();
+        dailyData.volume = dailyObj["5. volume"].toString().toDouble();
+        // 解析新字段
+        dailyData.ma5 = dailyObj["6. ma5"].toString().toDouble();
+        dailyData.ma10 = dailyObj["7. ma10"].toString().toDouble();
+        dailyData.ma20 = dailyObj["8. ma20"].toString().toDouble();
+        dailyData.k = dailyObj["9. k"].toString().toDouble();
+        dailyData.d = dailyObj["10. d"].toString().toDouble();
+        dailyData.rsi = dailyObj["11. rsi"].toString().toDouble();
+        dailyData.macd_line = dailyObj["12. macd_line"].toString().toDouble();
+        dailyData.signal_line = dailyObj["13. signal_line"].toString().toDouble();
+        dailyData.histogram = dailyObj["14. histogram"].toString().toDouble();
+        dailyData.price_change_percent = dailyObj["15. price_change_percent"].toString().toDouble();
+        dailyData.signal = dailyObj["16. signal"].toString();
+        dailyData.strength = dailyObj["17. strength"].toString();
+        dailyData.body_size = dailyObj["18. body_size"].toString().toDouble();
+        dailyData.body_type = dailyObj["19. body_type"].toString();
+        dailyData.upper_shadow = dailyObj["20. upper_shadow"].toString().toDouble();
+        dailyData.lower_shadow = dailyObj["21. lower_shadow"].toString().toDouble();
 
         dataManager.addDailyData(date, dailyData);
     }
-
     return true;
 }
 

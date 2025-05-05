@@ -13,7 +13,24 @@ struct DailyStockData {
     double high;     // 最高價
     double low;      // 最低價
     double close;    // 收盤價
-    int volume;      // 成交量
+    double volume;      // 成交量
+    // 新增技術指標字段
+    double ma5;      // 5 日移動平均線
+    double ma10;     // 10 日移動平均線
+    double ma20;     // 20 日移動平均線
+    double k;        // 隨機指標 K 值
+    double d;        // 隨機指標 D 值
+    double rsi;      // 相對強弱指數
+    double macd_line; // MACD 線
+    double signal_line; // MACD 訊號線
+    double histogram; // MACD 直方圖
+    double price_change_percent; // 價格變動百分比
+    QString signal;   // 交易訊號
+    QString strength; // 訊號強度
+    double body_size; // K 線實體大小
+    QString body_type; // K 線類型（Bullish/Bearish）
+    double upper_shadow; // 上影線
+    double lower_shadow; // 下影線
 };
 
 // 股票元數據結構
