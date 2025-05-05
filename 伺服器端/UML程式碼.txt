@@ -71,8 +71,9 @@ package "網路傳輸模組" {
         +bool sendPacket(client: SOCKET, packet: PacketInterface)
         +string receive()
         +void cleanup()
+        +SOCKET getClientSocket()
     }
-    
+
     class TaskPool {
         +TaskPool()
         +~TaskPool()
@@ -84,14 +85,26 @@ package "網路傳輸模組" {
     NetworkServer --> TaskPool : 使用
 }
 
+' === 技術指標模組（簡化） ===
+package "技術指標模組" {
+    class Tech_Analysis {
+        +movingAverage(...)
+        +rsi(...)
+        +macd(...)
+        +kd(...)
+    }
+}
+
 ' === 關係連接 ===
 main --> StockDataFetcher : 使用
 main --> FileReader : 使用
 main --> NetworkServer : 啟動傳輸
 
 StockDataFetcher --> "API Server" : 發送請求
-StockDataFetcher --> "JSON File" : 儲存檔案
-FileReader --> "JSON File" : 讀取檔案
+StockDataFetcher --> "原始 JSON File" : 儲存檔案
+"原始 JSON File" --> Tech_Analysis : 技術指標計算
+Tech_Analysis --> "已處理 JSON File" : 輸出處理後資料
+FileReader --> "已處理 JSON File" : 讀取已加工檔案
 FileReader --> JsonPacket : 封裝資料
 
 JsonPacket --> PacketInterface : 實作
