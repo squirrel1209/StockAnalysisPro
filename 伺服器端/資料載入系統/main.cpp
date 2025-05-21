@@ -10,7 +10,24 @@ int main() {
     StockDataFetcher fetcher(apiKey);
 
     // 設定要抓取的股票代碼
-    std::vector<std::string> symbols = {"TSLA", "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"};
+    std::vector<std::string> symbols = {
+        "TSLA",   // Tesla
+        "AAPL",   // Apple
+        "MSFT",   // Microsoft
+        "GOOGL",  // Alphabet (Google)
+        "AMZN",   // Amazon
+        "NVDA",   // NVIDIA
+        "META",   // Meta (Facebook)
+        "INTC",   // Intel
+        "ORCL",   // Oracle
+        "IBM",    // IBM
+        "NFLX",   // Netflix
+        "AMD",    // AMD
+        "BABA",   // Alibaba
+        "JPM",    // JPMorgan Chase
+        "V",      // Visa
+        "UNH"     // UnitedHealth Group
+    };
 
     // 執行抓取與儲存
     fetcher.fetchAndSaveAll(symbols);

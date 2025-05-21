@@ -161,6 +161,8 @@ bool NetworkServer::sendPacket(SOCKET client, const PacketInterface& packet) {
             std::cerr << "[ERROR] 傳送資料長度失敗: " << WSAGetLastError() << std::endl;
             return false;
         }
+
+        std::cout << "[DEBUG] 傳送長度資訊，送了 " << sent << " bytes" << std::endl;
         total_sent += sent;
     }
 
@@ -173,6 +175,8 @@ bool NetworkServer::sendPacket(SOCKET client, const PacketInterface& packet) {
             std::cerr << "[ERROR] 傳送資料失敗: " << WSAGetLastError() << std::endl;
             return false;
         }
+
+        std::cerr << "[DEBUG] 傳送資料，送了 " << sent << " bytes" << std::endl;
         total_sent += sent;
     }
 

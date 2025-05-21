@@ -23,9 +23,22 @@ int main() {
     std::vector<std::string> filenames = {
         "../TechnicalIndicators/output_json/stock_data_AAPL_processed.json",
         "../TechnicalIndicators/output_json/stock_data_AMZN_processed.json",
-        "../TechnicalIndicators/output_json/stock_data_GOOGL_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_GOOGL_processed.json",   // 有些 API 用 GOOG，有些用 GOOGL，請依實際命名調整
         "../TechnicalIndicators/output_json/stock_data_MSFT_processed.json",
-        "../TechnicalIndicators/output_json/stock_data_NVDA_processed.json"};
+        "../TechnicalIndicators/output_json/stock_data_NVDA_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_TSLA_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_META_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_INTC_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_ORCL_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_IBM_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_NFLX_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_AMD_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_BABA_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_JPM_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_V_processed.json",
+        "../TechnicalIndicators/output_json/stock_data_UNH_processed.json"
+    };
+
 
     std::vector<std::string> json_data_list;
 
