@@ -1,14 +1,13 @@
-// main.cpp
-#include <chrono>
-#include <iostream>
-#include <thread>
-#include <vector>
-
 #include "FileReader.h"
-#include "JsonPacket.h"
 #include "NetworkServer.h"
-#include "json.hpp"
+#include "JsonPacket.h"
 #include "task_pool.h"
+#include "json.hpp"
+
+#include <iostream>
+#include <vector>
+#include <chrono>
+#include <thread>
 
 #define PORT 8080
 
@@ -19,11 +18,11 @@ int main() {
 
     FileReader fileReader;
 
-    // 讀取五個 JSON 檔案
+    // 🔄 讀取多個 JSON 檔案
     std::vector<std::string> filenames = {
         "../TechnicalIndicators/output_json/stock_data_AAPL_processed.json",
         "../TechnicalIndicators/output_json/stock_data_AMZN_processed.json",
-        "../TechnicalIndicators/output_json/stock_data_GOOGL_processed.json",   // 有些 API 用 GOOG，有些用 GOOGL，請依實際命名調整
+        "../TechnicalIndicators/output_json/stock_data_GOOGL_processed.json",
         "../TechnicalIndicators/output_json/stock_data_MSFT_processed.json",
         "../TechnicalIndicators/output_json/stock_data_NVDA_processed.json",
         "../TechnicalIndicators/output_json/stock_data_TSLA_processed.json",
@@ -39,22 +38,21 @@ int main() {
         "../TechnicalIndicators/output_json/stock_data_UNH_processed.json"
     };
 
-
     std::vector<std::string> json_data_list;
 
     for (const auto& filename : filenames) {
         std::cout << "[INFO] 讀取檔案: " << filename << std::endl;
-        std::string json = fileReader.readJsonFile(filename);
-        if (json.empty()) {
+        std::string json_data = fileReader.readJsonFile(filename);
+        if (json_data.empty()) {
             std::cerr << "[ERROR] 讀取檔案失敗: " << filename << std::endl;
             return -1;
         }
-        json_data_list.push_back(json);
+        json_data_list.push_back(json_data);
     }
 
-    // 組合成 JSON 陣列
     std::cout << "[INFO] 建立 JSON 陣列..." << std::endl;
     json json_array = json::array();
+
     for (const auto& json_data : json_data_list) {
         try {
             json json_obj = json::parse(json_data);
@@ -66,7 +64,6 @@ int main() {
         }
     }
 
-    // 轉換為字串
     std::string json_array_str = json_array.dump();
     std::cout << "[INFO] JSON 陣列大小: " << json_array_str.size() << " bytes" << std::endl;
 
@@ -78,11 +75,39 @@ int main() {
         return -1;
     }
 
-    // 設置 JSON 數據
-    server.setJsonData(json_array_str);
+    std::cout << "[INFO] 開始監聽埠口 " << PORT << "..." << std::endl;
+    if (!server.startListening()) {
+        std::cerr << "[ERROR] 伺服器監聽失敗" << std::endl;
+        return -1;
+    }
 
-    // 啟動伺服器主迴圈
-    server.run();
+    // ✅ 使用 thread pool
+    TaskPool tp;
+
+    while (true) {
+        std::cout << "[INFO] 等待客戶端連線..." << std::endl;
+        if (!server.acceptConnection()) {
+            std::cerr << "[ERROR] 接受連線失敗" << std::endl;
+            continue;
+        }
+
+        SOCKET client = server.getClientSocket();
+        std::cout << "[INFO] 客戶端已連線: SOCKET " << client << std::endl;
+
+        tp.AddTask([client, json_array_str, &server]() {
+            JsonPacket packet(json_array_str);
+
+            if (server.sendPacket(client, packet)) {
+                std::cout << "[INFO] [SOCKET " << client << "] 傳送 JSON 陣列成功" << std::endl;
+            } else {
+                std::cerr << "[ERROR] [SOCKET " << client << "] 傳送 JSON 陣列失敗" << std::endl;
+            }
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000)); // 確保 client 收完整
+            closesocket(client);
+            std::cout << "[INFO] [SOCKET " << client << "] 客戶端連線已關閉" << std::endl;
+        });
+    }
 
     return 0;
 }
